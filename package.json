@@ -1,0 +1,34 @@
+{
+  "name": "prepingredients",
+  "version": "1.0.0",
+  "description": "a web app for more conveniently informing the kitchen what ingredients are in shortage in front",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PeizeLi0106/PrepIngredients.git"
+  },
+  "keywords": [
+    "restaurant",
+    "preping",
+    "ingredients"
+  ],
+  "author": "Peize Li",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PeizeLi0106/PrepIngredients/issues"
+  },
+  "homepage": "https://github.com/PeizeLi0106/PrepIngredients#readme",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
+    "compress": "^0.99.0",
+    "compression": "^1.7.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

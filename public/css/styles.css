@@ -1,0 +1,53 @@
+/* Reset default margins and padding */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Container adjustments */
+.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0; /* Remove container padding */
+    margin: 0 auto; /* Center container */
+    max-width: 100%; /* Ensure full width */
+}
+
+/* Remove Bootstrap gutter */
+.row {
+    --bs-gutter-x: 0; /* Remove horizontal spacing */
+    --bs-gutter-y: 0; /* Remove vertical spacing (optional) */
+    margin-bottom: 20px;
+}
+.col{
+    margin-bottom: 20px;
+}
+
+/* Content div adjustments */
+.content-left,
+.content-right {
+    width: 48%;
+    margin: 0;
+}
+
+/* Vertical bar styling */
+.vertical-bar {
+    width: 4px; /* Thickness of the bar */
+    background-color: black; /* Color of the bar */
+    margin: 0 20px; /* No additional space */
+}
+.card {
+    margin: 10px; /* Add space around each card */
+}
+.dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem; /* Adjust padding to reduce space */
+    display: flex;       /* Use flexbox to align content properly */
+    align-items: center; /* Center align emojis and text */
+}
+.dropdown-menu .dropdown-item a {
+    margin-right: 0; /* Remove unnecessary margin if any */
+}
