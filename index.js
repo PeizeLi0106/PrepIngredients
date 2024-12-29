@@ -72,7 +72,7 @@ const ingredients_dict = {"牛肉 Rindfleisch": 1, "五⾹⽜腱⼦ Gewürzte-Ri
     "⽩百叶 Frische-Rindskutteln": 1, "⻩喉 Rinderhals": 1, "辣牛⾁ scharf-Rindfleisch": 1, "凤⽖ Hühnerfüße": 1, "⽺⾁卷 Lammfleisch-Rolle": 1, 
     "⽜蛙 Ochsenfrosch": 1, "鸭珍 Entenmagen": 1, "⻧猪肚 Marinierte-Schweinemagen": 1, "⿊百叶 Schwarzer-Rindermagen": 1, "上海⻘ Pak-Choi": 2, "⼤⽩菜 Chinakohl": 2, 
     "⽣菜 Blattsalat": 2, "菠菜 Spinat": 2, "茼蒿 Tong-Ho": 2, "莲藕 Lotuswurzel": 2, "⻄兰花 Brokkoli": 2, "⾹菜 Koriander": 2, "⽩萝⼘ Rettich": 2, 
-    "菊 苣 Chicorée": 2, "⼟⾖ Kartoffeln": 2, "胡萝⼘ Karotten": 2, "红薯 Süßkartoffel": 2, "⻩花菜 Getrocknete-Taglilien": 2, 
+    "菊苣 Chicorée": 2, "⼟⾖ Kartoffeln": 2, "胡萝⼘ Karotten": 2, "红薯 Süßkartoffel": 2, "⻩花菜 Getrocknete-Taglilien": 2, 
     "⽵笋 Bambus": 2, "⼭药 Yamswurzel": 2, "南⽠ Kürbis": 2, "芋头 Taro": 2, "⾖芽 Sojasprossen": 2, "冬⽠ Wintermelone": 2, 
     "平菇 Austernpilze": 2, "杏鲍菇 Königsausternpilze": 2, "⽟⽶尖 Mais-Sprossen": 2, "菜⼼ Choy-sum": 2, "⼟⽿其⽩卷⼼菜 Türkischer-Spitzkohl": 2, 
     "菜花 Blumenkohl": 2, "油⻨菜 Chinesischer-Salat": 2, "荷兰⾖ Kaiserschoten": 2, "⻩⽠条 Gurke": 2, "⽟⽶ Mais": 2, "贡菜 Berggelee-Gemüse": 2, "芋仔 kleine-Taro-Knollen": 2,
