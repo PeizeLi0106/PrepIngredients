@@ -8,22 +8,23 @@
 </head>
 <body>
     <div class="row row-cols-1 row-cols-md-6 g-4">
-        <% if (locals.vegs) { var veg_lst = Object.keys(vegs); for (var i = 0; i < veg_lst.length; i++) { var veg_item = veg_lst[i];%>
+        <% if (locals.vegs) { var veg_lst = Object.keys(vegs); for (var i = 0; i < veg_lst.length; i++) { var veg_item = veg_lst[i]; const [item_in_mandarin, item_in_german] = veg_item.split(' ');%>
             <div class="col">
                 <%# click the button; pass the ingredient name thru POST action%>
-                <div id="<%=veg_item%>" class="card h-100">
+                <div id="<%=item_in_mandarin%>" class="card h-100">
                     <div id="cover">        
-                        <img src="/images/<%= veg_item%>.jpg" class="card-img-top" alt="<%= veg_item%>" loading="lazy">
+                        <img src="/images/<%= encodeURIComponent(item_in_mandarin) %>.jpg" class="card-img-top" alt="<%= item_in_german%>" loading="lazy">
                     </div>
                     <div class="card-body">
-                    <h5 class="card-title" style="font-style: italic;"><%= veg_item %></h5>
+                        <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
+                        <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
                     </div>
                 </div>
             </div>
             <script>
                 var urgency = "<%=vegs[veg_item]%>";
                 if (urgency === "true"){
-                    document.getElementById("<%=veg_item%>").style.backgroundColor = "#ffc107";
+                    document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
                 }
             </script>
             <% } }%>

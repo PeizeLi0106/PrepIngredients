@@ -24,10 +24,12 @@
   },
   "homepage": "https://github.com/PeizeLi0106/PrepIngredients#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.717.0",
     "axios": "^1.7.9",
     "body-parser": "^1.20.3",
     "compress": "^0.99.0",
     "compression": "^1.7.5",
+    "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "ws": "^8.18.0"
