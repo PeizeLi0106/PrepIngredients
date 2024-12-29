@@ -29,28 +29,27 @@
             <% } }%>
     </div>
 
-    <script> 
-        const socket = new WebSocket('ws://localhost:3000');
+    <script>
+        const socket = new WebSocket(`wss://${window.location.host}`);
+    
         window.addEventListener('beforeunload', () => {
             socket.close(); // Explicitly close the WebSocket connection
         });
-
+    
         let isPageLoaded = false;
-
+    
         document.addEventListener('DOMContentLoaded', () => {
             isPageLoaded = true;
         });
-
+    
         socket.onmessage = (event) => {
-            //console.log('Received WebSocket message:', event.data);
-        
             const data = JSON.parse(event.data);
-
+    
             if (isPageLoaded && data.page === 'meat' && window.location.pathname === '/meat') {
                 location.reload(); // Refresh page
             }
         };
-    // Handle WebSocket errors
+    
         socket.onerror = (error) => {
             console.error('WebSocket error:', error);
         };

@@ -4,6 +4,8 @@ import axios from "axios";
 import {WebSocketServer, WebSocket} from "ws";
 import http from "http";
 import path from "path";
+import compression from "compression";
+
 import { fileURLToPath } from "url";
 
 // dotenv.config();
@@ -34,6 +36,7 @@ const wss = new WebSocketServer({server});
 
 app.use(bodyParser.urlencoded({ extended: true })); 
 app.use(express.json());
+app.use(compression());
 
 
 // Serve CSS files with shorter caching
