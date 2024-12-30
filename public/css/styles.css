@@ -23,31 +23,44 @@ html, body {
     --bs-gutter-y: 0; /* Remove vertical spacing (optional) */
     margin-bottom: 20px;
 }
-.col{
+
+.col {
     margin-bottom: 20px;
 }
 
 /* Content div adjustments */
-.content-left,
+.content-left {
+    flex: 2; /* Make left side take up more space */
+    margin-right: 10px; /* Add space between left and the vertical bar */
+}
+
 .content-right {
-    width: 48%;
-    margin: 0;
+    flex: 1; /* Make right side smaller */
+    margin-left: 10px; /* Add space between the right side and the vertical bar */
 }
 
 /* Vertical bar styling */
 .vertical-bar {
-    width: 4px; /* Thickness of the bar */
+    width: 2px; /* Reduced thickness of the bar */
     background-color: black; /* Color of the bar */
-    margin: 0 20px; /* No additional space */
 }
+
+/* Card styling */
 .card {
     margin: 10px; /* Add space around each card */
 }
+
+.card-body {
+    text-align: center; /* Center align text inside cards */
+}
+
+/* Dropdown item styling */
 .dropdown-menu .dropdown-item {
     padding: 0.5rem 1rem; /* Adjust padding to reduce space */
     display: flex;       /* Use flexbox to align content properly */
     align-items: center; /* Center align emojis and text */
 }
+
 .dropdown-menu .dropdown-item a {
     margin-right: 0; /* Remove unnecessary margin if any */
 }
