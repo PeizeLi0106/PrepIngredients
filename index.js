@@ -4,7 +4,6 @@ import axios from "axios";
 import {WebSocketServer, WebSocket} from "ws";
 import http from "http";
 import path from "path";
-//import compression from "compression";
 
 import { fileURLToPath } from "url";
 
@@ -48,19 +47,7 @@ app.use(
     },
   })
 );
-
-// Serve images with aggressive caching
-// app.use(
-//     "/images",
-//     express.static("/var/www/images", {
-//       maxAge: "1y", // Cache for 1 year
-//       immutable: true, // Files won't change
-//       setHeaders: (res) => {
-//         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-//       },
-//     })
-//   );
-
+app.use('/audio', express.static(path.join(__dirname, 'public/audio')));
 
 
 // ingredients: a dict {ingredient_name: genre (meat or veg)}
@@ -98,42 +85,66 @@ var veg_side_dict = {}; // {name: urgency}
 
 
 // Notify clients when a page is rendered
-function notifyClients(page) {
-    //console.log(`Number of clients connected: ${wss.clients.size}`);
-    //console.log(`Notifying clients about page: ${page}`);
+function notifyClients(action, page) {
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ page }));
+            client.send(JSON.stringify({ action, page }));
         }
     });
 }
+// meat: remain -> shortage
+app.post("/addMeat", (req, res) => {
+    const name = req.body.name;
+    const urgent = req.body.urgent;
+    meat_side_dict[name] = urgent;
+    notifyClients('add', 'meat');
+    res.redirect("/meat");
+
+
+})
+
+app.post("/addVeg", (req, res) => {
+    const name = req.body.name;
+    const urgent = req.body.urgent;
+    veg_side_dict[name] = urgent;
+    notifyClients('add', 'veg'); // Notify clients after rendering index.ejs
+    res.redirect("/veg");
+})
+
+// meat: shortage -> remain
+app.post("/removeMeat", (req, res) => {
+    const name = req.body.name;
+    delete meat_side_dict[name];
+    notifyClients('remove', 'meat');
+    res.redirect("/meat");
+
+
+})
+
+// veg: shortage -> remain
+app.post("/removeVeg", (req, res) => {
+    const name = req.body.name;
+    delete veg_side_dict[name];
+    notifyClients('remove', 'veg'); // Notify clients after rendering index.ejs
+    res.redirect("/veg");
+
+})
+
 
 app.get("/", (req, res) => {
-    res.render("index.ejs", {remain: remain_lst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: remain_lst, shortage: shortage_dict, req: req});
 });
 
 app.get("/meat", (req, res) => {
     res.render("meat.ejs", {meats: meat_side_dict});
-    notifyClients('meat'); // Notify clients after rendering index.ejs
 
 });
 
 app.get("/veg", (req, res) => {
     res.render("veg.ejs", {vegs: veg_side_dict});
-    notifyClients('veg'); // Notify clients after rendering index.ejs
 
 });
 
-// app.get("/search", (req, res) => {
-//     const searchIngreName = req.query["name"];
-//     let temp_lst = [];
-//     if (remain_lst.includes(searchIngreName)){
-//         temp_lst.push(searchIngreName);
-//     }else{
-//         temp_lst = remain_lst;
-//     }
-//     res.render("index.ejs", {remain: temp_lst, shortage: shortage_dict});
-// });
 app.get("/sortByMeat", (req, res) => {
     let vLst = [];
     for (const rems of remain_lst){
@@ -141,7 +152,7 @@ app.get("/sortByMeat", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
     
 });
 
@@ -152,7 +163,7 @@ app.get("/sortByVeg", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 app.get("/sortByBall", (req, res) => {
     let vLst = [];
@@ -161,7 +172,7 @@ app.get("/sortByBall", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 app.get("/sortBySeafood", (req, res) => {
     let vLst = [];
@@ -170,7 +181,7 @@ app.get("/sortBySeafood", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 app.get("/sortByFungi", (req, res) => {
     let vLst = [];
@@ -179,7 +190,7 @@ app.get("/sortByFungi", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 app.get("/sortByBean", (req, res) => {
     let vLst = [];
@@ -188,7 +199,7 @@ app.get("/sortByBean", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 app.get("/sortByNoodle", (req, res) => {
     let vLst = [];
@@ -197,40 +208,10 @@ app.get("/sortByNoodle", (req, res) => {
             vLst.push(rems);
         }
     }
-    res.render("index.ejs", {remain: vLst, shortage: shortage_dict});
+    res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 
-// meat: remain -> shortage
-app.post("/addMeat", (req, res) => {
-    const name = req.body.name;
-    const urgent = req.body.urgent;
-    meat_side_dict[name] = urgent;
-    //console.log(meat_side_dict)
-    res.redirect("/meat");
-})
 
-app.post("/addVeg", (req, res) => {
-    const name = req.body.name;
-    const urgent = req.body.urgent;
-    veg_side_dict[name] = urgent;
-    //console.log(veg_side_dict)
-    res.redirect("/veg");
-})
-
-// meat: shortage -> remain
-app.post("/removeMeat", (req, res) => {
-    const name = req.body.name;
-    delete meat_side_dict[name];
-    res.redirect("/meat");
-
-})
-
-// veg: shortage -> remain
-app.post("/removeVeg", (req, res) => {
-    const name = req.body.name;
-    delete veg_side_dict[name];
-    res.redirect("/veg");
-})
 
 // POST request made from remain list (adding sth to the shortage lst)
 app.post("/remain/:name", async (req, res) => {
@@ -264,8 +245,8 @@ app.post("/remain/:name", async (req, res) => {
             console.log(error);
         }
     }
-    res.redirect("/"); // re-renders the front side page
-
+    const currentRoute = req.query.currentRoute || "/";
+    res.redirect(currentRoute);
 });
 
 // POST request made from shortage list (removing sth from the shortage lst)

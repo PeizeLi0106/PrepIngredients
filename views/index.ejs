@@ -4,7 +4,7 @@
         <div class="container">
             <div class="content-left">
                 <div class="row row-cols-1 row-cols-md-4 g-0">
-                    <% if (locals.remain) { for (var i = 0; i < remain.length; i++) { var remain_ingre = remain[i]; const [item_in_mandarin, item_in_german] = remain_ingre.split(" ");%>
+                    <% if (locals.remain && locals.req) { for (var i = 0; i < remain.length; i++) { var remain_ingre = remain[i]; const [item_in_mandarin, item_in_german] = remain_ingre.split(" ");%>
                         <div class="col">
                             <div class="card h-100">
                                 <div id="cover">
@@ -13,7 +13,7 @@
                                 <div class="card-body">
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
-                                    <form action="/remain/<%=remain_ingre%>" method="post" style="display: inline;">
+                                    <form action="/remain/<%= remain_ingre %>?currentRoute=<%= encodeURIComponent(req.originalUrl) %>" method="post" style="display: inline;">
                                         <input type="submit" class="btn btn-primary" name="regular" value="&#43;" />
                                         <input type="submit" class="btn btn-warning" name="urgent" value="&#43;" />
                                     </form>

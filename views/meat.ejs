@@ -26,11 +26,33 @@
                     document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
                 }
             </script>
-            <% } }%>
+        <% } }%>
     </div>
 
     <script>
-        const socket = new WebSocket(`wss://${window.location.host}`);
+        // Preload the audio and gain autoplay permission
+        const notificationAudio = new Audio('/audio/notification.mp3'); // Update the path if needed
+        
+        notificationAudio.muted = true; // Start muted
+        notificationAudio.play().then(() => {
+                notificationAudio.muted = false; // Unmute for later use
+                console.log('Audio autoplay permission granted');
+            }).catch((error) => {
+                console.error('Autoplay permission denied:', error);
+            });
+    
+        //Request notification permission
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                } else {
+                    console.log('Notification permission denied');
+                }
+            });
+        }
+    
+        const socket = new WebSocket('wss://${window.location.host}'); // Update with your WebSocket URL
     
         window.addEventListener('beforeunload', () => {
             socket.close(); // Explicitly close the WebSocket connection
@@ -41,12 +63,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             isPageLoaded = true;
         });
-    
+        // Handle incoming WebSocket messages
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
     
-            if (isPageLoaded && data.page === 'meat' && window.location.pathname === '/meat') {
-                location.reload(); // Refresh page
+            if (isPageLoaded && data.page === 'meat') {
+                if (data.action === 'add') {
+                    console.log('Meat added, sound will be played');
+                    notificationAudio.play().catch(error => console.error('Error playing sound:', error));
+                } else {
+                    console.log('Meat removed, no sound will be played');
+                }
+                // Refresh the page
+                location.reload();
             }
         };
     
