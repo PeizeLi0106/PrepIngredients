@@ -63,7 +63,7 @@ const ingredients_dict = {"牛肉 Rindfleisch": 1, "五香牛腱子 Gewürzte-Ri
     "竹笋 Bambus": 2, "山药 Yamswurzel": 2, "南瓜 Kürbis": 2, "芋头 Taro": 2, "豆芽 Sojasprossen": 2, "冬瓜 Wintermelone": 2, 
     "平菇 Austernpilze": 2, "杏鲍菇 Königsausternpilze": 2, "玉米尖 Mais-Sprossen": 2, "菜心 Choy-sum": 2, "土耳其白卷心菜 Türkischer-Spitzkohl": 2, 
     "菜花 Blumenkohl": 2, "油麦菜 Chinesischer-Salat": 2, "荷兰豆 Kaiserschoten": 2, "黄瓜条 Gurke": 2, "玉米 Mais": 2, "贡菜 Berggelee-Gemüse": 2, "芋仔 kleine-Taro-Knollen": 2,
-    "鲜鱼丸 Fischbällchen": 3, "午餐肉 Frühstücksfleisch": 3, "墨鱼丸 Tintenfischbällchen": 3, "煎鸡蛋 Spiegelei": 3, "鸡肉小香肠 Hähnchenwürstchen": 3, 
+    "鲜鱼丸 Fischbällchen": 3, "午餐肉 Frühstücksfleisch": 3, "墨鱼丸 Tintenfischbällchen": 3, "牛筋丸": 3, "煎鸡蛋 Spiegelei": 3, "鸡肉小香肠 Hähnchenwürstchen": 3, 
     "虾丸 Garnelenbällchen": 3, "日本熏肠 Japanische-Räucherwurst": 3, "猫爪虾丸 Katzenpfoten-Garnelenbällchen": 3, "溏心卤蛋 Marinierte-Eier": 3, 
     "鱼豆腐 Fisch-Tofu": 3, "竹轮烧 Chikuwa": 3, "福州鱼丸 Fuzhou-Fischbällchen": 3, "鸡肉香肠 Hähnchenwurst": 3, "贡丸 Schweinefleisch-gefüllte-Bällchen": 3, 
     "蟹棒 Surimi-Sticks": 3, "牛肉丸 Rindfleischbällchen": 3, "火腿肠 Schinkenwurst": 3,"海带 Seetang": 4, "章鱼 Oktopus": 4, 
@@ -117,8 +117,6 @@ app.post("/removeMeat", (req, res) => {
     delete meat_side_dict[name];
     notifyClients('remove', 'meat');
     res.redirect("/meat");
-
-
 })
 
 // veg: shortage -> remain
