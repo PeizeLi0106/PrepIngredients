@@ -6,7 +6,7 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import fileUpload from 'express-fileupload';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, PutObjectCommand, DeleteObjectCommand} from "@aws-sdk/client-s3"
 import dotenv from 'dotenv';
 import pg from "pg";
 
@@ -103,11 +103,6 @@ app.use(
 );
 app.use('/audio', express.static(path.join(__dirname, 'public/audio')));
 
-
-
-
-
-
 // Notify clients when a page is rendered
 function notifyClients(action, page) {
     wss.clients.forEach(client => {
@@ -175,8 +170,8 @@ app.post("/upload", async (req, res) => {
     }
     remain_lst.push(ingredientName);
     prep_side_dict[ingredientName] = prep_side;
-    await db.query("INSERT INTO ingredients (name, category, prep_side) VALUES ($1, $2, $3)", [ingredientName, category_int, prep_side]);
     try {
+        await db.query("INSERT INTO ingredients (name, category, prep_side) VALUES ($1, $2, $3)", [ingredientName, category_int, prep_side]);
         // Send the upload to S3
         await s3Client.send(new PutObjectCommand(uploadParams));
         res.redirect("/");
@@ -322,7 +317,81 @@ app.get("/sortBySauce", (req, res) => {
     res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req});
 });
 
+app.post("/delete/:name", async (req, res) => {
+    const name = req.params.name;
+    const imageName = name.split(" ")[0] + ".jpg"; // Assuming the S3 key is the first part of the ingredient name + `.jpg`
 
+    try {
+        // Delete the item from the database
+        await db.query("DELETE FROM ingredients WHERE name = $1", [name]);
+
+        // Remove the item from the in-memory data structures
+        delete ingredients_dict[name];
+        delete prep_side_dict[name];
+        remain_lst = remain_lst.filter(item => item !== name);
+        // Delete the image from the S3 bucket
+        const deleteParams = {
+            Bucket: bucketName,
+            Key: imageName,
+        };
+        await s3Client.send(new DeleteObjectCommand(deleteParams));
+
+        // Redirect back to the current route
+        const currentRoute = req.query.currentRoute || "/";
+        res.redirect(currentRoute);
+    } catch (err) {
+        console.error("Error deleting item:", err);
+        res.status(500).send("Error deleting item.");
+    }
+});
+
+app.post("/edit/:name", async (req, res) => {
+    const ingredientName = req.params.name;
+    const category = req.body.category;
+    const prep_side = req.body.prep_side;
+    const file = req.files?.file; // File may not be provided for an edit
+
+    let category_int = 0;
+    switch (category) {
+        case 'meat': category_int = 1; break;
+        case 'veg': category_int = 2; break;
+        case 'ball': category_int = 3; break;
+        case 'seafood': category_int = 4; break;
+        case 'fungi': category_int = 5; break;
+        case 'bean': category_int = 6; break;
+        case 'noodle': category_int = 7; break;
+        case 'sauce': category_int = 8; break;
+        default: console.log('Unknown category');
+    }
+
+    // had to update the in-memory structure because it reflects changes immediately
+    ingredients_dict[ingredientName] = category_int;
+    prep_side_dict[ingredientName] = prep_side;
+
+    try {
+        // Update the database
+        await db.query(
+            "UPDATE ingredients SET category = $1, prep_side = $2 WHERE name = $3",
+            [category_int, prep_side, ingredientName]
+        );
+
+        // Update the S3 object if a new file is uploaded
+        if (file) {
+            const uploadParams = {
+                Bucket: bucketName,
+                Body: file.data,
+                Key: `${ingredientName.split(" ")[0]}.jpg`,
+                ContentType: "image/jpeg",
+            };
+            await s3Client.send(new PutObjectCommand(uploadParams));
+        }
+
+        res.redirect("/");
+    } catch (err) {
+        console.error("Error editing ingredient:", err);
+        res.status(500).send("Error editing ingredient.");
+    }
+});
 
 // POST request made from remain list (adding sth to the shortage lst)
 app.post("/remain/:name", async (req, res) => {

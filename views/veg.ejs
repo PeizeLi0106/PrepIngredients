@@ -33,14 +33,8 @@
     <script>
         // Preload the audio and gain autoplay permission
         const notificationAudio = new Audio('/audio/notification.mp3'); // Update the path if needed
-        
-        notificationAudio.muted = true; // Start muted
-        notificationAudio.play().then(() => {
-                notificationAudio.muted = false; // Unmute for later use
-                console.log('Audio autoplay permission granted');
-            }).catch((error) => {
-                console.error('Autoplay permission denied:', error);
-            });
+        notificationAudio.play();
+       
     
         //Request notification permission
         if ('Notification' in window && Notification.permission !== 'granted') {
@@ -59,22 +53,11 @@
             socket.close(); // Explicitly close the WebSocket connection
         });
     
-        let isPageLoaded = false;
-    
-        document.addEventListener('DOMContentLoaded', () => {
-            isPageLoaded = true;
-        });
         // Handle incoming WebSocket messages
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
     
-            if (isPageLoaded && data.page === 'veg') {
-                if (data.action === 'add') {
-                    console.log('Meat added, sound will be played');
-                    notificationAudio.play().catch(error => console.error('Error playing sound:', error));
-                } else {
-                    console.log('Meat removed, no sound will be played');
-                }
+            if (data.page === 'veg') {
                 // Refresh the page
                 location.reload();
             }

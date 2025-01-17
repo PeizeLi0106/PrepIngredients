@@ -19,6 +19,18 @@
                                             <input type="submit" class="btn btn-warning" name="urgent" value="&#43;" />
                                         <% } %>
                                     </form>
+                                    <!-- Delete Button -->
+                                     <!-- Edit Button -->
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-secondary btn-sm" 
+                                        style="position: absolute; bottom: 5px; left: 5px; padding: 2px 5px; font-size: 12px;" 
+                                        onclick="openEditDialog('<%= remain_ingre %>', '<%= item_in_mandarin %>', '<%= item_in_german %>')"
+                                    >✎</button>
+                                    <form id="delete-form-<%= i %>" action="/delete/<%= remain_ingre %>" method="post" style="display: inline;">
+                                        <button type="button" class="btn btn-danger btn-sm" style="position: absolute; bottom: 5px; right: 5px; padding: 2px 5px; font-size: 12px;"
+                                            onclick="confirmDelete('<%= i %>')">➖</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -70,6 +82,90 @@
                 </div>
             </div>
         </div>
+        <!-- Edit Dialog Box -->
+        <div id="edit-dialog-box" class="modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Ingredient</h5>
+                        <button type="button" class="btn-close" onclick="closeEditDialog()"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-form" action="#" method="post" enctype="multipart/form-data">
+                            <!-- Text Input (disabled for editing) -->
+                            <div class="mb-3">
+                                <label for="edit-ingredient-name" class="form-label">Ingredient Name</label>
+                                <input type="text" class="form-control" id="edit-ingredient-name" name="name" readonly>
+                            </div>
+                            <!-- Image Input -->
+                            <div class="mb-3">
+                                <label for="edit-file-input" class="form-label">Upload New Image</label>
+                                <input type="file" class="form-control" id="edit-file-input" name="file" accept="image/*">
+                            </div>
+                            <!-- Category Selection -->
+                            <div class="d-flex flex-wrap justify-content-between mb-3">
+                                <button type="button" class="btn btn-outline-primary" onclick="setEditCategory('meat')">🥩 肉</button>
+                                <button type="button" class="btn btn-outline-success" onclick="setEditCategory('veg')">🥬 青菜</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setEditCategory('ball')">🍢 丸子</button>
+                                <button type="button" class="btn btn-outline-info" onclick="setEditCategory('seafood')">🐟 海鲜</button>
+                                <button type="button" class="btn btn-outline-warning" onclick="setEditCategory('fungi')">🍄 菌类</button>
+                                <button type="button" class="btn btn-outline-dark" onclick="setEditCategory('bean')">🫘 豆制品</button>
+                                <button type="button" class="btn btn-outline-danger" onclick="setEditCategory('noodle')">🍜 主食</button>
+                                <button type="button" class="btn btn-outline-danger" onclick="setEditCategory('sauce')">🥣 小料</button>
+                            </div>
+                            <!-- Submit Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-primary w-50 me-1" onclick="submitEditForm('meat')">Submit as 🥩 Meat</button>
+                                <button type="button" class="btn btn-outline-success w-50 ms-1" onclick="submitEditForm('veg')">Submit as 🥬 Veg</button>
+                            </div>
+                            <!-- Hidden Input for Category -->
+                            <input type="hidden" id="edit-category-input" name="category">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            function openEditDialog(name, mandarin, german) {
+                const dialog = document.getElementById('edit-dialog-box');
+                dialog.style.display = 'block';
+
+                // Prefill the form with the existing data
+                document.getElementById('edit-ingredient-name').value = name;
+                document.getElementById('edit-category-input').value = ''; // Reset category
+                document.getElementById('edit-file-input').value = ''; // Reset file input
+
+                // Set the form action to the edit route
+                const form = document.getElementById('edit-form');
+                form.action = `/edit/${name}`;
+            }
+
+            function closeEditDialog() {
+                const dialog = document.getElementById('edit-dialog-box');
+                dialog.style.display = 'none';
+            }
+
+            function setEditCategory(category) {
+                const categoryInput = document.getElementById('edit-category-input');
+                categoryInput.value = category;
+                alert(`Category set to: ${category}`); // Optional feedback
+            }
+
+            function submitEditForm(prepSide) {
+                const form = document.getElementById('edit-form');
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'prep_side';
+                input.value = prepSide; // 'meat' or 'veg'
+                form.appendChild(input);
+                form.submit();
+            }
+            function confirmDelete(formId) {
+                if (confirm("Are you sure you want to delete this item?")) {
+                    document.getElementById(`delete-form-${formId}`).submit();
+                }
+            }
+        </script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     </body>
 </html>
