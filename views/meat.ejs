@@ -64,7 +64,7 @@
             });
         }
     
-        const socket = new WebSocket(`wss://${window.location.host}`); // Update with your WebSocket URL
+        const socket = new WebSocket('ws://localhost:3000'); // Update with your WebSocket URL
     
         window.addEventListener('beforeunload', () => {
             socket.close(); // Explicitly close the WebSocket connection
