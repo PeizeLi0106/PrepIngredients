@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="row row-cols-1 row-cols-md-6 g-4">
-        <% if (locals.meats) {var meat_lst = Object.keys(meats); for (var i = 0; i < meat_lst.length; i++) { var meat_item = meat_lst[i]; const [item_in_mandarin, item_in_german] = meat_item.split(' ');%>
+        <% if (locals.meats) {var meat_lst = Object.keys(meats); for (var i = 0; i < meat_lst.length; i++) { var meat_item = meat_lst[i]; const [item_in_mandarin, item_in_german] = meat_item.split(' '); if (item_in_mandarin === "米饭") { const quantity = meats[meat_item]; for (var j = 0; j < quantity; j++) {%>
             <div class="col">
                 <div id="<%=item_in_mandarin%>" class="card h-100">
                     <div id="cover">        
@@ -20,13 +20,25 @@
                     </div>
                 </div>
             </div>
-            <script>
-                var urgency = "<%=meats[meat_item]%>";
-                if (urgency === "true"){
-                    document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
-                }
-            </script>
-        <% } }%>
+            <% } } else { %>
+                <div class="col">
+                    <div id="<%=item_in_mandarin%>" class="card h-100">
+                        <div id="cover">        
+                            <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%= item_in_german%>">
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
+                            <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    var urgency = "<%=meats[meat_item]%>";
+                    if (urgency === "true"){
+                        document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
+                    }
+                </script>
+        <% } } }%>
     </div>
 
     <script>

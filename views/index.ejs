@@ -15,7 +15,9 @@
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
                                     <form action="/remain/<%= remain_ingre %>?currentRoute=<%= encodeURIComponent(req.originalUrl) %>" method="post" style="display: inline;">
                                         <input type="submit" class="btn btn-primary" name="regular" value="&#43;" />
-                                        <input type="submit" class="btn btn-warning" name="urgent" value="&#43;" />
+                                        <% if (item_in_mandarin !== "米饭") { %>
+                                            <input type="submit" class="btn btn-warning" name="urgent" value="&#43;" />
+                                        <% } %>
                                     </form>
                                 </div>
                             </div>
@@ -28,28 +30,43 @@
 
             <div class="content-right">
                 <div class="row row-cols-1 row-cols-md-2 g-0">
-                    <% if (locals.shortage) { var shortage_list = Object.keys(shortage); for (var i = 0; i < shortage_list.length; i++) { var shortage_item = shortage_list[i]; const [item_in_mandarin, item_in_german] = shortage_item.split(" "); %>
-                        <div class="col">
-                            <div id="<%=item_in_mandarin%>" class="card h-100">
-                                <div id="cover">
-                                    <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%=item_in_german%>">
+                    <% if (locals.shortage) { var shortage_list = Object.keys(shortage); for (var i = 0; i < shortage_list.length; i++) { var shortage_item = shortage_list[i]; const [item_in_mandarin, item_in_german] = shortage_item.split(" "); if (item_in_mandarin === "米饭") { const rice_quantity = shortage[shortage_item]; for (var j = 0; j < rice_quantity; j++) { %>
+                            <div class="col">
+                                <div id="<%=item_in_mandarin%>" class="card h-100">
+                                    <div id="cover">
+                                        <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%=item_in_german%>">
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
+                                        <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
+                                        <form action="/shortage/<%=shortage_item%>" method="post" style="display: inline;">
+                                            <input type="submit" class="btn btn-primary" value="&#8722;" />
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
-                                    <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
-                                    <form action="/shortage/<%=shortage_item%>" method="post" style="display: inline;">
-                                        <input type="submit" class="btn btn-primary" value="&#8722;" />
-                                    </form>
+                            </div> 
+                    <% } } else { %>
+                                <div class="col">
+                                    <div id="<%=item_in_mandarin%>" class="card h-100">
+                                        <div id="cover">
+                                            <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%=item_in_german%>">
+                                        </div>
+                                        <div class="card-body">
+                                            <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
+                                            <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
+                                            <form action="/shortage/<%=shortage_item%>" method="post" style="display: inline;">
+                                                <input type="submit" class="btn btn-primary" value="&#8722;" />
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <script>
-                            var urgency = "<%=shortage[shortage_item]%>";
-                            if (urgency === "true") {
-                                document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
-                            }
-                        </script>
-                    <% } }%>
+                                <script>
+                                    var urgency = "<%=shortage[shortage_item]%>";
+                                    if (urgency === "true") {
+                                        document.getElementById("<%=item_in_mandarin%>").style.backgroundColor = "#ffc107";
+                                    }
+                                </script>
+                    <% } } }%>
                 </div>
             </div>
         </div>
