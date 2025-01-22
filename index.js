@@ -123,7 +123,6 @@ app.post("/upload", async (req, res) => {
     const category = req.body.category;
     const prep_side = req.body.prep_side;
     let category_int = 0;
-    //console.log(ingredientName, category)
   
     // Define S3 upload parameters
     const uploadParams = {
@@ -232,11 +231,13 @@ app.get("/", (req, res) => {
 });
 
 app.get("/meat", (req, res) => {
+    console.log(meat_side_dict)
     res.render("meat.ejs", {meats: meat_side_dict});
 
 });
 
 app.get("/veg", (req, res) => {
+    //console.log(veg_side_dict)
     res.render("veg.ejs", {vegs: veg_side_dict});
 
 });
@@ -363,7 +364,6 @@ app.post("/edit/:name", async (req, res) => {
         case 'sauce': category_int = 8; break;
         default: console.log('Unknown category');
     }
-
     // had to update the in-memory structure because it reflects changes immediately
     ingredients_dict[ingredientName] = category_int;
     prep_side_dict[ingredientName] = prep_side;
@@ -439,6 +439,7 @@ app.post("/shortage/:name", async (req, res)=>{
     // remove the ingredient from shortage_lst
     if (name !== "米饭 Reis"){ // if it is not rice, remove it from shortage_lst
         delete shortage_dict[name];
+        console.log(shortage_dict);
         remain_lst = [...remain_lst, name]; // add the ingredient back to the remain_lst
     }else if (shortage_dict[name] > 1){
         shortage_dict[name] -= 1;
