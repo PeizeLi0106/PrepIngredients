@@ -8,12 +8,12 @@
 </head>
 <body>
     <div class="row row-cols-1 row-cols-md-6 g-4">
-        <% if (locals.vegs) { var veg_lst = Object.keys(vegs); for (var i = 0; i < veg_lst.length; i++) { var veg_item = veg_lst[i]; const [item_in_mandarin, item_in_german] = veg_item.split(' ');%>
+        <% if (locals.vegs && locals.timestamps) { var veg_lst = Object.keys(vegs); for (var i = 0; i < veg_lst.length; i++) { var veg_item = veg_lst[i]; const [item_in_mandarin, item_in_german] = veg_item.split(' '); const ts = timestamps[veg_item]; var url_suffix = ""; if (ts !== null) { url_suffix = "-" + ts; }%>
             <div class="col">
                 <%# click the button; pass the ingredient name thru POST action%>
                 <div id="<%=item_in_mandarin%>" class="card h-100">
                     <div id="cover">        
-                        <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%= item_in_german%>">
+                        <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin + url_suffix %>.jpg %>" class="card-img-top" alt="<%= item_in_german%>">
                     </div>
                     <div class="card-body">
                         <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>

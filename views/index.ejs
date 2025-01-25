@@ -4,11 +4,11 @@
         <div class="container">
             <div class="content-left">
                 <div class="row row-cols-1 row-cols-md-4 g-0">
-                    <% if (locals.remain && locals.req) { for (var i = 0; i < remain.length; i++) { var remain_ingre = remain[i]; const [item_in_mandarin, item_in_german] = remain_ingre.split(" ");%>
+                    <% if (locals.remain && locals.req && locals.timestamps) { for (var i = 0; i < remain.length; i++) { var remain_ingre = remain[i]; const [item_in_mandarin, item_in_german] = remain_ingre.split(" "); const ts = timestamps[remain_ingre]; var url_suffix = ""; if (ts !== null) { url_suffix = "-" + ts; } %>
                         <div class="col">
                             <div class="card h-100">
                                 <div id="cover">
-                                    <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%= item_in_german%>">
+                                    <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin + url_suffix %>.jpg%>" class="card-img-top" alt="<%= item_in_german%>">
                                 </div>
                                 <div class="card-body">
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
@@ -41,11 +41,11 @@
 
             <div class="content-right">
                 <div class="row row-cols-1 row-cols-md-2 g-0">
-                    <% if (locals.shortage) { var shortage_list = Object.keys(shortage); for (var i = 0; i < shortage_list.length; i++) { var shortage_item = shortage_list[i]; const [item_in_mandarin, item_in_german] = shortage_item.split(" "); if (item_in_mandarin === "米饭") { const rice_quantity = shortage[shortage_item]; for (var j = 0; j < rice_quantity; j++) { %>
+                    <% if (locals.shortage && locals.timestamps) { var shortage_list = Object.keys(shortage); for (var i = 0; i < shortage_list.length; i++) { var shortage_item = shortage_list[i]; const [item_in_mandarin, item_in_german] = shortage_item.split(" "); const ts = timestamps[shortage_item]; var url_suffix = ""; if (ts !== null) { url_suffix = "-" + ts; } if (item_in_mandarin === "米饭") { const rice_quantity = shortage[shortage_item]; for (var j = 0; j < rice_quantity; j++) { %>
                             <div class="col">
                                 <div id="<%=item_in_mandarin%>" class="card h-100">
                                     <div id="cover">
-                                        <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%=item_in_german%>">
+                                        <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin + url_suffix %>.jpg %>" class="card-img-top" alt="<%=item_in_german%>">
                                     </div>
                                     <div class="card-body">
                                         <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
@@ -60,7 +60,7 @@
                                 <div class="col">
                                     <div id="<%=item_in_mandarin%>" class="card h-100">
                                         <div id="cover">
-                                            <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin %>.jpg" class="card-img-top" alt="<%=item_in_german%>">
+                                            <img src="https://dcf196gsozjg8.cloudfront.net/<%= item_in_mandarin + url_suffix %>.jpg %>" class="card-img-top" alt="<%=item_in_german%>">
                                         </div>
                                         <div class="card-body">
                                             <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
