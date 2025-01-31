@@ -40,12 +40,11 @@
                 </script>
         <% } } }%>
     </div>
-
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         // Preload the audio without playing it initially
         const notificationAudio = new Audio('/audio/notification.mp3'); // Update the path if needed
         notificationAudio.play();
-
 
         // Request notification permission
         if ('Notification' in window && Notification.permission !== 'granted') {
@@ -58,24 +57,19 @@
             });
         }
     
-        const socket = new WebSocket(`wss://${window.location.host}`); // Update with your WebSocket URL
+        const socket = io(`${window.location.protocol}//${window.location.host}`); // Replace with your server's URL if deployed
     
-        window.addEventListener('beforeunload', () => {
-            socket.close(); // Explicitly close the WebSocket connection
+        socket.on("refresh meat", () => {
+            location.reload();
         });
-    
-        // Handle incoming WebSocket messages
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            // Refresh the page after handling the action
-            if (data.page === 'meat') {
-                location.reload();
-            }
-        };
-    
-        socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
+        socket.on("connect_error", (error) => {
+            console.error("Socket.IO connection error:", error);
+        });
+
+        // Optional: Clean up when the page is being unloaded
+        window.addEventListener("beforeunload", () => {
+            socket.disconnect(); // Explicitly disconnect the Socket.IO connection
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 

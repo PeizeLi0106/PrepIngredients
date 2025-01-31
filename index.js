@@ -1,7 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
 import axios from "axios";
-import {WebSocketServer, WebSocket} from "ws";
 import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,6 +8,7 @@ import fileUpload from 'express-fileupload';
 import { S3Client, PutObjectCommand, DeleteObjectCommand} from "@aws-sdk/client-s3"
 import dotenv from 'dotenv';
 import pg from "pg";
+import {Server} from "socket.io";
 
 
 
@@ -55,7 +55,7 @@ const app = express();
 
 const server = http.createServer(app);
 
-const wss = new WebSocketServer({server});
+const io = new Server(server);
 // ingredients: a dict {ingredient_name: genre (meat or veg)}
 // dictionary remains constant; each time renders the lists
 // 肉: 1, 蔬菜: 2，丸子: 3，海鲜: 4，菌类: 5，豆制品: 6, 主食: 7, 小料米饭: 8
@@ -105,85 +105,16 @@ app.use(
 );
 app.use('/audio', express.static(path.join(__dirname, 'public/audio')));
 
-// Notify clients when a page is rendered
-function notifyClients(action, page) {
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ action, page }));
-        }
+
+io.on("connection", (socket) => {
+    //console.log("A client connected:", socket.id);
+    // Optional: Handle client disconnection
+    socket.on("disconnect", () => {
+        //console.log("A client disconnected:", socket.id);
     });
-}
+});
 
 
-app.post("/upload", async (req, res) => {
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).send("No files were uploaded.");
-    }
-  
-    const file = req.files.file;
-    const ingredientName = req.body.name.trim();
-    const category = req.body.category;
-    const prep_side = req.body.prep_side;
-    let category_int = 0;
-    const ingredientName_in_mandarin = ingredientName.split(" ")[0];
-  
-    // Define S3 upload parameters
-    const timestamp = Date.now();
-    const uploadParams = {
-        Bucket: bucketName,
-        Body: file.data,
-        Key: `${ingredientName_in_mandarin}-${timestamp}.jpg`, // Unique key for every upload
-        ContentType: "image/jpeg",
-    };
-    switch (category) {
-        case 'meat':
-            ingredients_dict[ingredientName] = 1;
-            category_int = 1;
-            break;
-        case 'veg':
-            ingredients_dict[ingredientName] = 2;
-            category_int = 2;
-            break;
-        case 'ball':
-            ingredients_dict[ingredientName] = 3;
-            category_int = 3;
-            break;
-        case 'seafood':
-            ingredients_dict[ingredientName] = 4;
-            category_int = 4;
-            break;
-        case 'fungi':
-            ingredients_dict[ingredientName] = 5;
-            category_int = 5;
-            break;
-        case 'bean':
-            ingredients_dict[ingredientName] = 6;
-            category_int = 6;
-            break;
-        case 'noodle':
-            ingredients_dict[ingredientName] = 7;
-            category_int = 7;
-            break;
-        case 'sauce':
-            ingredients_dict[ingredientName] = 8;
-            category_int = 8;
-            break;
-        default:
-            console.log('Unknown category');
-    }
-    remain_lst.push(ingredientName);
-    prep_side_dict[ingredientName] = prep_side;
-    url_dict[ingredientName] = timestamp; 
-    try {
-        await db.query("INSERT INTO ingredients (name, category, prep_side, timestamp) VALUES ($1, $2, $3, $4)", [ingredientName, category_int, prep_side, timestamp]);
-        // Send the upload to S3
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        res.redirect("/");
-    } catch (err) {
-        console.error("Error uploading file:", err);
-        res.status(500).send("Error uploading file.");
-    }
-  });
 // meat: remain -> shortage
 app.post("/addMeat", (req, res) => {
     const name = req.body.name;
@@ -195,7 +126,7 @@ app.post("/addMeat", (req, res) => {
     }else{
         meat_side_dict[name] = 1;
     }
-    notifyClients('add', 'meat');
+    io.emit("refresh meat");
     res.redirect("/meat");
 
 })
@@ -204,7 +135,7 @@ app.post("/addVeg", (req, res) => {
     const name = req.body.name;
     const urgent = req.body.urgent;
     veg_side_dict[name] = urgent;
-    notifyClients('add', 'veg'); // Notify clients after rendering index.ejs
+    io.emit("refresh veg");
     res.redirect("/veg");
 })
 
@@ -218,7 +149,7 @@ app.post("/removeMeat", (req, res) => {
     }else{
         delete meat_side_dict[name];
     }
-    notifyClients('remove', 'meat');
+    io.emit("refresh meat");
     res.redirect("/meat");
 })
 
@@ -226,7 +157,7 @@ app.post("/removeMeat", (req, res) => {
 app.post("/removeVeg", (req, res) => {
     const name = req.body.name;
     delete veg_side_dict[name];
-    notifyClients('remove', 'veg'); // Notify clients after rendering index.ejs
+    io.emit("refresh veg");
     res.redirect("/veg");
 })
 
@@ -320,6 +251,76 @@ app.get("/sortBySauce", (req, res) => {
     }
     res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req, timestamps: url_dict});
 });
+
+app.post("/upload", async (req, res) => {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).send("No files were uploaded.");
+    }
+  
+    const file = req.files.file;
+    const ingredientName = req.body.name.trim();
+    const category = req.body.category;
+    const prep_side = req.body.prep_side;
+    let category_int = 0;
+    const ingredientName_in_mandarin = ingredientName.split(" ")[0];
+  
+    // Define S3 upload parameters
+    const timestamp = Date.now();
+    const uploadParams = {
+        Bucket: bucketName,
+        Body: file.data,
+        Key: `${ingredientName_in_mandarin}-${timestamp}.jpg`, // Unique key for every upload
+        ContentType: "image/jpeg",
+    };
+    switch (category) {
+        case 'meat':
+            ingredients_dict[ingredientName] = 1;
+            category_int = 1;
+            break;
+        case 'veg':
+            ingredients_dict[ingredientName] = 2;
+            category_int = 2;
+            break;
+        case 'ball':
+            ingredients_dict[ingredientName] = 3;
+            category_int = 3;
+            break;
+        case 'seafood':
+            ingredients_dict[ingredientName] = 4;
+            category_int = 4;
+            break;
+        case 'fungi':
+            ingredients_dict[ingredientName] = 5;
+            category_int = 5;
+            break;
+        case 'bean':
+            ingredients_dict[ingredientName] = 6;
+            category_int = 6;
+            break;
+        case 'noodle':
+            ingredients_dict[ingredientName] = 7;
+            category_int = 7;
+            break;
+        case 'sauce':
+            ingredients_dict[ingredientName] = 8;
+            category_int = 8;
+            break;
+        default:
+            console.log('Unknown category');
+    }
+    remain_lst.push(ingredientName);
+    prep_side_dict[ingredientName] = prep_side;
+    url_dict[ingredientName] = timestamp; 
+    try {
+        await db.query("INSERT INTO ingredients (name, category, prep_side, timestamp) VALUES ($1, $2, $3, $4)", [ingredientName, category_int, prep_side, timestamp]);
+        // Send the upload to S3
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        res.redirect("/");
+    } catch (err) {
+        console.error("Error uploading file:", err);
+        res.status(500).send("Error uploading file.");
+    }
+  });
 
 app.post("/delete/:name", async (req, res) => {
     const name = req.params.name;
