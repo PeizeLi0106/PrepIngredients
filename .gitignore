@@ -130,4 +130,5 @@ dist
 .pnp.*
 
 public/images/*
+.DS_Store
 
