@@ -16,6 +16,11 @@
             <div class="d-flex justify-content-end">
                 <ul class="navbar-nav">
                     <li class="nav-item">
+                        <button class="btn btn-danger me-2" style= "min-width: 120px;" onclick="sendHelpSignal()">
+                            ❓ HELP
+                        </button>
+                    </li>
+                    <li class="nav-item">
                         <button class="btn btn-primary ms-3" onclick="openDialog()">
                             ➕ Add
                         </button>
@@ -83,37 +88,4 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // Function to open the dialog
-        function openDialog() {
-            const dialog = document.getElementById('dialog-box');
-            dialog.style.display = 'block';
-        }
-    
-        // Function to close the dialog
-        function closeDialog() {
-            const dialog = document.getElementById('dialog-box');
-            dialog.style.display = 'none';
-        }
-    
-        // Function to set the category value
-        function setCategory(category) {
-            const categoryInput = document.getElementById('category-input');
-            categoryInput.value = category;
-            alert(`Category set to: ${category}`); // Optional visual feedback
-        }
-    
-        // Function to submit the form with meat/veg classification
-        function submitForm(prepSide) {
-            const form = document.getElementById('upload-form');
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'prep_side';
-            input.value = prepSide; // 'meat' or 'veg'
-            form.appendChild(input);
-            form.submit();
-        }
-    </script>
-
     

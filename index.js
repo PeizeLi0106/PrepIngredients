@@ -12,9 +12,7 @@ import {Server} from "socket.io";
 
 
 
-
 dotenv.config();
-
 
 const bucketName = process.env.BUCKET_NAME
 const region = process.env.BUCKET_REGION
@@ -57,19 +55,20 @@ const server = http.createServer(app);
 
 const io = new Server(server);
 // ingredients: a dict {ingredient_name: genre (meat or veg)}
-// dictionary remains constant; each time renders the lists
 // 肉: 1, 蔬菜: 2，丸子: 3，海鲜: 4，菌类: 5，豆制品: 6, 主食: 7, 小料米饭: 8
 // 香菇 for meat side, 乌冬面 for veg side (exceptions)
-const ingredients_dict = {};
-const prep_side_dict = {};
-const url_dict = {}; // {name: timestamp} only needs to store timestamp every file follows the format of name-timestamp.jpg
-var remain_lst = [];
+const ingredients_dict = {}; // a dict {ingredient_name: genre (1, .....8)} 8 genres
+const prep_side_dict = {}; // a dict {ingredient_name: prep_side (meat or veg)}
+const url_dict = {}; // {name: timestamp} stores timestamp solely for image files (name-timestamp.jpg)
+var remain_lst = []; // a list of ingredients that not in shortage (on the left side of the page)
 
-
+// the following dicts keep track of the urgency level of the shortage ingredients
 var shortage_dict = {}; // {name: urgency}
-var meat_side_dict = {}; // {name: urgency}
-var veg_side_dict = {}; // {name: urgency}
+// var meat_side_dict = {}; // {name: urgency}
+// var veg_side_dict = {}; // {name: urgency}
 
+
+// populate the local data structures with the data from the database
 async function populate_ingredients() {
     try {
         const res = await db.query("SELECT * FROM ingredients");
@@ -85,27 +84,26 @@ async function populate_ingredients() {
 }
 populate_ingredients();
 
-
-
+// Middlewares 
 app.use(bodyParser.urlencoded({ extended: true })); 
 app.use(express.json());
 app.use(fileUpload());
 
 
-
-// Serve CSS files with shorter caching
+// cache the css file for 1 day (86400 seconds) and audio files for 7 days (604800 seconds) for faster loading time
 app.use(
-  "/css",
-  express.static(path.join(__dirname, "public/css"), {
-    maxAge: "1d", // Cache for 1 day
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day in seconds
-    },
-  })
-);
-app.use('/audio', express.static(path.join(__dirname, 'public/audio')));
+    express.static(path.join(__dirname, 'public'), {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.css')) {
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+        } else if (filePath.endsWith('.mp3')) {
+          res.setHeader('Cache-Control', 'public, max-age=604800');
+        }
+      },
+    })
+  );
 
-
+// Listens to new clients connecting to the server
 io.on("connection", (socket) => {
     //console.log("A client connected:", socket.id);
     // Optional: Handle client disconnection
@@ -115,67 +113,303 @@ io.on("connection", (socket) => {
 });
 
 
-// meat: remain -> shortage
-app.post("/addMeat", (req, res) => {
-    const name = req.body.name;
-    const urgent = req.body.urgent;
-    if (name !== "米饭 Reis"){
-        meat_side_dict[name] = urgent;
-    }else if (meat_side_dict[name] >= 1){
-        meat_side_dict[name] += 1;
-    }else{
-        meat_side_dict[name] = 1;
-    }
-    io.emit("refresh meat");
-    res.redirect("/meat");
-
-})
-
-app.post("/addVeg", (req, res) => {
-    const name = req.body.name;
-    const urgent = req.body.urgent;
-    veg_side_dict[name] = urgent;
-    io.emit("refresh veg");
-    res.redirect("/veg");
-})
-
-// meat: shortage -> remain
-app.post("/removeMeat", (req, res) => {
-    const name = req.body.name;
-    if (name !== "米饭 Reis"){
-        delete meat_side_dict[name];
-    }else if (meat_side_dict[name] > 1){
-        meat_side_dict[name] -= 1;
-    }else{
-        delete meat_side_dict[name];
-    }
-    io.emit("refresh meat");
-    res.redirect("/meat");
-})
-
-// veg: shortage -> remain
-app.post("/removeVeg", (req, res) => {
-    const name = req.body.name;
-    delete veg_side_dict[name];
-    io.emit("refresh veg");
-    res.redirect("/veg");
-})
-
-
+// renders the index page used by the buffet staff
 app.get("/", (req, res) => {
     res.render("index.ejs", {remain: remain_lst, shortage: shortage_dict, req: req, timestamps: url_dict});
 });
 
-app.get("/meat", (req, res) => {
-    res.render("meat.ejs", {meats: meat_side_dict, timestamps: url_dict});
-
+// renders the meat side page viewed by the meat chef
+app.get('/meat', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/pages/meat.html'));
 });
-
+  
+/* // renders the veg side page viewed by the veg chef
 app.get("/veg", (req, res) => {
-    res.render("veg.ejs", {vegs: veg_side_dict, timestamps: url_dict});
+    res.sendFile(path.join(__dirname, 'public/pages/veg.html'));
+}); */
 
+// move a meat ingredient from remain to shortage and notify the meat chef in the kitchen to start prepping
+app.post("/addMeat", (req, res) => {
+    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+        name,
+        urgent,
+        timestamp: url_dict[name]
+      })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
+    io.emit("updates shortage", {renderList: renderList, message : "prepping a meat"}); // send the list of shortage ingredients to render
+    res.status(200).json({ status: "ok" });
 });
 
+// once the meat chef finishes preping and buffet staff confirms it, remove the ingredient from shortage and move it back to remain
+app.post("/removeMeat", (req, res) => {
+    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+        name,
+        urgent,
+        timestamp: url_dict[name]
+      })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
+    io.emit("updates shortage", {renderList: renderList, message : "received the ingredient"}); // the message now should be "received the ingredient"
+    res.status(200).json({ status: "ok" });
+});
+
+/* move a veg ingredient from remain to shortage and notify the veg chef in the kitchen to start prepping
+archive function: all prepping is done on meat side now
+app.post("/addVeg", (req, res) => {
+    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+        name,
+        urgent,
+        timestamp: url_dict[name]
+      })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
+    io.emit("updates shortage", {renderList: renderList, message : "prepping a veg"}); // send the list of shortage ingredients to render
+    res.status(200).json({ status: "ok" });
+}) */
+
+/* once the veg chef finishes preping and buffet staff confirms it, remove the ingredient from shortage and move it back to remain
+archive function: all prepping done on the meat side now
+app.post("/removeVeg", (req, res) => {
+    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+        name,
+        urgent,
+        timestamp: url_dict[name]
+      })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
+    io.emit("updates shortage", {renderList: renderList, message : "received the ingredient"}); // the message now should be "received the ingredient"
+    res.status(200).json({ status: "ok" });
+}) */
+
+// add an ingredient to the shortage list (removing it from remain_lst) and notify the chef in the kitchen
+app.post("/remain/:name", async (req, res) => {
+    var urgent = false;
+    if (Object.keys(req.body)[0] === "urgent"){
+        urgent = true;
+    }
+    const name = req.params.name;
+    const prep_side = prep_side_dict[name]; // locate the genre so that we know to which kitchen we are sending
+    // remove the ingredient from remain_lst
+    if (name !== "米饭 Reis"){ // if it is not rice, remove it from remain_lst
+        remain_lst = remain_lst.filter((remain) => {
+            return remain !== name;
+        });
+        shortage_dict[name] = urgent;
+    }else if (name in shortage_dict){ // if it is rice, remain it in remain_lst and shortage_dict["rice"] = # of rices needed
+        shortage_dict[name] += 1;
+    }else{
+        shortage_dict[name] = 1;
+    }
+    
+    // update the meat end if it is a meat; otherwise update the veg end
+    if (prep_side === "meat"){
+        try {
+            const response = await axios.post(`http://localhost:${port}/addMeat`);
+        }catch (error){
+            console.log(error);
+        }
+        
+    }else{
+        try{
+            const response = await axios.post(`http://localhost:${port}/addVeg`);
+        }catch (error){
+            console.log(error);
+        }
+    }
+    const currentRoute = req.query.currentRoute || "/"; // this ensures the page stays when user is moving ingredients around during sortBy
+    res.redirect(currentRoute);
+});
+
+// remove an ingredient from the shortage list (adding it back to remain_lst) and notify the chef in the kitchen
+app.post("/shortage/:name", async (req, res)=>{
+    const name = req.params.name;
+    const prep_side = prep_side_dict[name]; // locate the genre so that we know to which kitchen we are sending
+    if (name !== "米饭 Reis"){ // if it is not rice, remove it from shortage_lst
+        delete shortage_dict[name];
+        remain_lst = [...remain_lst, name]; // add the ingredient back to the remain_lst
+    }else if (shortage_dict[name] > 1){
+        shortage_dict[name] -= 1;
+    }else{
+        delete shortage_dict[name];
+    }
+    // update the meat end if it is a meat; otherwise update the veg end
+    if (prep_side === "meat"){
+        try {
+            const response = await axios.post(`http://localhost:${port}/removeMeat`);
+        }catch (error){
+            console.log(error);
+        }
+        
+    }else{
+        try{
+            const response = await axios.post(`http://localhost:${port}/removeVeg`);
+        }catch (error){
+            console.log(error);
+        }
+    }
+    res.redirect("/"); // re-renders the front side page
+})
+
+// insert the new ingredient into the database and upload the image to S3 bucket
+app.post("/upload", async (req, res) => {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).send("No files were uploaded.");
+    }
+  
+    const file = req.files.file;
+    const ingredientName = req.body.name.trim();
+    const category = req.body.category;
+    const prep_side = req.body.prep_side;
+    let category_int = 0;
+    const ingredientName_in_mandarin = ingredientName.split(" ")[0];
+  
+    // Define S3 upload parameters
+    const timestamp = Date.now();
+    const uploadParams = {
+        Bucket: bucketName,
+        Body: file.data,
+        Key: `${ingredientName_in_mandarin}-${timestamp}.jpg`, // Unique key for every upload
+        ContentType: "image/jpeg",
+    };
+    switch (category) {
+        case 'meat':
+            ingredients_dict[ingredientName] = 1;
+            category_int = 1;
+            break;
+        case 'veg':
+            ingredients_dict[ingredientName] = 2;
+            category_int = 2;
+            break;
+        case 'ball':
+            ingredients_dict[ingredientName] = 3;
+            category_int = 3;
+            break;
+        case 'seafood':
+            ingredients_dict[ingredientName] = 4;
+            category_int = 4;
+            break;
+        case 'fungi':
+            ingredients_dict[ingredientName] = 5;
+            category_int = 5;
+            break;
+        case 'bean':
+            ingredients_dict[ingredientName] = 6;
+            category_int = 6;
+            break;
+        case 'noodle':
+            ingredients_dict[ingredientName] = 7;
+            category_int = 7;
+            break;
+        case 'sauce':
+            ingredients_dict[ingredientName] = 8;
+            category_int = 8;
+            break;
+        default:
+            console.log('Unknown category');
+    }
+    remain_lst.push(ingredientName);
+    prep_side_dict[ingredientName] = prep_side;
+    url_dict[ingredientName] = timestamp; 
+    try {
+        await db.query("INSERT INTO ingredients (name, category, prep_side, timestamp) VALUES ($1, $2, $3, $4)", [ingredientName, category_int, prep_side, timestamp]);
+        // Send the upload to S3
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        res.redirect("/");
+    } catch (err) {
+        console.error("Error uploading file:", err);
+        res.status(500).send("Error uploading file.");
+    }
+  });
+
+// delete the ingredient from the database and remove the image from S3 bucket
+app.post("/delete/:name", async (req, res) => {
+    const name = req.params.name;
+    const timestamp = url_dict[name];
+    var imageName = "";
+    imageName = timestamp === null ? `${name.split(' ')[0]}.jpg` : `${name.split(' ')[0]}-${timestamp}.jpg`;
+    try {
+        // Delete the item from the database
+        await db.query("DELETE FROM ingredients WHERE name = $1", [name]);
+
+        // Remove the item from the in-memory data structures
+        delete ingredients_dict[name];
+        delete prep_side_dict[name];
+        delete url_dict[name];
+        remain_lst = remain_lst.filter(item => item !== name);
+        // Delete the image from the S3 bucket
+        const deleteParams = {
+            Bucket: bucketName,
+            Key: imageName,
+        };
+        await s3Client.send(new DeleteObjectCommand(deleteParams));
+
+        // Redirect back to the current route
+        const currentRoute = req.query.currentRoute || "/";
+        res.redirect(currentRoute);
+    } catch (err) {
+        console.error("Error deleting item:", err);
+        res.status(500).send("Error deleting item.");
+    }
+});
+
+// edit the ingredient in the database and update the image in S3 bucket
+app.post("/edit/:name", async (req, res) => {
+    const ingredientName = req.params.name;
+    const category = req.body.category;
+    const prep_side = req.body.prep_side;
+    const file = req.files?.file; // File may not be provided for an edit
+
+    let category_int = 0;
+    switch (category) {
+        case 'meat': category_int = 1; break;
+        case 'veg': category_int = 2; break;
+        case 'ball': category_int = 3; break;
+        case 'seafood': category_int = 4; break;
+        case 'fungi': category_int = 5; break;
+        case 'bean': category_int = 6; break;
+        case 'noodle': category_int = 7; break;
+        case 'sauce': category_int = 8; break;
+        default: console.log('Unknown category');
+    }
+    // had to update the in-memory structure because it reflects changes immediately
+    ingredients_dict[ingredientName] = category_int;
+    prep_side_dict[ingredientName] = prep_side;
+
+    try {
+        if (file) { // if there is new file uploaded, update the timestamp
+            const timestamp = Date.now();
+            const old_timestamp = url_dict[ingredientName];
+            var imageName = "";
+            imageName = old_timestamp === null ? `${ingredientName.split(' ')[0]}.jpg` : `${ingredientName.split(' ')[0]}-${old_timestamp}.jpg`;
+            url_dict[ingredientName] = timestamp; // !!!IMPORTANT: always update the in-memory storage
+            await db.query(
+                "UPDATE ingredients SET category = $1, prep_side = $2, timestamp = $3 WHERE name = $4",
+                [category_int, prep_side, timestamp, ingredientName]
+            );
+            //upload the new image
+            const uploadParams = {
+                Bucket: bucketName,
+                Body: file.data,
+                Key: `${ingredientName.split(" ")[0]}-${timestamp}.jpg`,
+                ContentType: "image/jpeg",
+            };
+            await s3Client.send(new PutObjectCommand(uploadParams));
+            
+            // delete the old image
+            const deleteParams = {
+                Bucket: bucketName,
+                Key: imageName,
+            };
+            await s3Client.send(new DeleteObjectCommand(deleteParams));
+        }else{ // if there is no new file uploaded, just update the category and prep_side in the database
+            await db.query(
+                "UPDATE ingredients SET category = $1, prep_side = $2 WHERE name = $3",
+                [category_int, prep_side, ingredientName]
+            );
+        }
+        res.redirect("/");
+    } catch (err) {
+        console.error("Error editing ingredient:", err);
+        res.status(500).send("Error editing ingredient.");
+    }
+});
+
+
+
+// sort the ingredients by their genre (meat, veg, ball, seafood, fungi, bean, noodle, sauce)
 app.get("/sortByMeat", (req, res) => {
     let vLst = [];
     for (const rems of remain_lst){
@@ -252,246 +486,11 @@ app.get("/sortBySauce", (req, res) => {
     res.render("index.ejs", {remain: vLst, shortage: shortage_dict, req: req, timestamps: url_dict});
 });
 
-app.post("/upload", async (req, res) => {
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).send("No files were uploaded.");
-    }
-  
-    const file = req.files.file;
-    const ingredientName = req.body.name.trim();
-    const category = req.body.category;
-    const prep_side = req.body.prep_side;
-    let category_int = 0;
-    const ingredientName_in_mandarin = ingredientName.split(" ")[0];
-  
-    // Define S3 upload parameters
-    const timestamp = Date.now();
-    const uploadParams = {
-        Bucket: bucketName,
-        Body: file.data,
-        Key: `${ingredientName_in_mandarin}-${timestamp}.jpg`, // Unique key for every upload
-        ContentType: "image/jpeg",
-    };
-    switch (category) {
-        case 'meat':
-            ingredients_dict[ingredientName] = 1;
-            category_int = 1;
-            break;
-        case 'veg':
-            ingredients_dict[ingredientName] = 2;
-            category_int = 2;
-            break;
-        case 'ball':
-            ingredients_dict[ingredientName] = 3;
-            category_int = 3;
-            break;
-        case 'seafood':
-            ingredients_dict[ingredientName] = 4;
-            category_int = 4;
-            break;
-        case 'fungi':
-            ingredients_dict[ingredientName] = 5;
-            category_int = 5;
-            break;
-        case 'bean':
-            ingredients_dict[ingredientName] = 6;
-            category_int = 6;
-            break;
-        case 'noodle':
-            ingredients_dict[ingredientName] = 7;
-            category_int = 7;
-            break;
-        case 'sauce':
-            ingredients_dict[ingredientName] = 8;
-            category_int = 8;
-            break;
-        default:
-            console.log('Unknown category');
-    }
-    remain_lst.push(ingredientName);
-    prep_side_dict[ingredientName] = prep_side;
-    url_dict[ingredientName] = timestamp; 
-    try {
-        await db.query("INSERT INTO ingredients (name, category, prep_side, timestamp) VALUES ($1, $2, $3, $4)", [ingredientName, category_int, prep_side, timestamp]);
-        // Send the upload to S3
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        res.redirect("/");
-    } catch (err) {
-        console.error("Error uploading file:", err);
-        res.status(500).send("Error uploading file.");
-    }
-  });
-
-app.post("/delete/:name", async (req, res) => {
-    const name = req.params.name;
-    const timestamp = url_dict[name];
-    var imageName = "";
-    if (timestamp === null){
-        imageName = `${name.split(' ')[0]}.jpg`;
-    }else{ // if a timestamp exists
-        imageName = `${name.split(' ')[0]}-${timestamp}.jpg`;
-    }
-
-    try {
-        // Delete the item from the database
-        await db.query("DELETE FROM ingredients WHERE name = $1", [name]);
-
-        // Remove the item from the in-memory data structures
-        delete ingredients_dict[name];
-        delete prep_side_dict[name];
-        delete url_dict[name];
-        remain_lst = remain_lst.filter(item => item !== name);
-        // Delete the image from the S3 bucket
-        const deleteParams = {
-            Bucket: bucketName,
-            Key: imageName,
-        };
-        await s3Client.send(new DeleteObjectCommand(deleteParams));
-
-        // Redirect back to the current route
-        const currentRoute = req.query.currentRoute || "/";
-        res.redirect(currentRoute);
-    } catch (err) {
-        console.error("Error deleting item:", err);
-        res.status(500).send("Error deleting item.");
-    }
+// sends a help signal to transfer one kitchen staff to help with the front kitchen
+app.post('/help', (req, res) => {
+    io.emit("help");
+    res.status(200).json({ status: "ok" });
 });
-
-app.post("/edit/:name", async (req, res) => {
-    const ingredientName = req.params.name;
-    const category = req.body.category;
-    const prep_side = req.body.prep_side;
-    const file = req.files?.file; // File may not be provided for an edit
-
-    let category_int = 0;
-    switch (category) {
-        case 'meat': category_int = 1; break;
-        case 'veg': category_int = 2; break;
-        case 'ball': category_int = 3; break;
-        case 'seafood': category_int = 4; break;
-        case 'fungi': category_int = 5; break;
-        case 'bean': category_int = 6; break;
-        case 'noodle': category_int = 7; break;
-        case 'sauce': category_int = 8; break;
-        default: console.log('Unknown category');
-    }
-    // had to update the in-memory structure because it reflects changes immediately
-    ingredients_dict[ingredientName] = category_int;
-    prep_side_dict[ingredientName] = prep_side;
-
-    try {
-        if (file) { // if there is new file uploaded, update the timestamp
-            const timestamp = Date.now();
-            const old_timestamp = url_dict[ingredientName];
-            var imageName = "";
-            if (old_timestamp === null){
-                imageName = `${ingredientName.split(' ')[0]}.jpg`;
-            }else{
-                imageName = `${ingredientName.split(' ')[0]}-${old_timestamp}.jpg`;
-            }
-            url_dict[ingredientName] = timestamp; // !!!IMPORTANT: always update the in-memory storage
-            await db.query(
-                "UPDATE ingredients SET category = $1, prep_side = $2, timestamp = $3 WHERE name = $4",
-                [category_int, prep_side, timestamp, ingredientName]
-            );
-            //upload the new image
-            const uploadParams = {
-                Bucket: bucketName,
-                Body: file.data,
-                Key: `${ingredientName.split(" ")[0]}-${timestamp}.jpg`,
-                ContentType: "image/jpeg",
-            };
-            await s3Client.send(new PutObjectCommand(uploadParams));
-            
-            // delete the old image
-            const deleteParams = {
-                Bucket: bucketName,
-                Key: imageName,
-            };
-            await s3Client.send(new DeleteObjectCommand(deleteParams));
-        }else{ // if there is no new file uploaded, just update the category and prep_side in the database
-            await db.query(
-                "UPDATE ingredients SET category = $1, prep_side = $2 WHERE name = $3",
-                [category_int, prep_side, ingredientName]
-            );
-        }
-        res.redirect("/");
-    } catch (err) {
-        console.error("Error editing ingredient:", err);
-        res.status(500).send("Error editing ingredient.");
-    }
-});
-
-// POST request made from remain list (adding sth to the shortage lst)
-app.post("/remain/:name", async (req, res) => {
-    var urgent = false;
-    if (Object.keys(req.body)[0] === "urgent"){
-        urgent = true;
-    }
-    const name = req.params.name;
-    const prep_side = prep_side_dict[name]; // locate the genre so that we know to which kitchen we are sending
-    // remove the ingredient from remain_lst
-    if (name !== "米饭 Reis"){ // if it is not rice, remove it from remain_lst
-        remain_lst = remain_lst.filter((remain) => {
-            return remain !== name;
-        });
-        shortage_dict[name] = urgent;
-    }else if (name in shortage_dict){ // if it is rice, remain it in remain_lst and shortage_dict["rice"] = # of rices needed
-        shortage_dict[name] += 1;
-    }else{
-        shortage_dict[name] = 1;
-    }
-    
-    // update the meat end if it is a meat; otherwise update the veg end
-    if (prep_side === "meat"){
-        try {
-            const response = await axios.post(`http://localhost:${port}/addMeat`, {name: name, urgent: urgent});
-        }catch (error){
-            console.log(error);
-        }
-        
-    }else{
-        try{
-            const response = await axios.post(`http://localhost:${port}/addVeg`, {name: name, urgent: urgent});
-        }catch (error){
-            console.log(error);
-        }
-    }
-    const currentRoute = req.query.currentRoute || "/";
-    res.redirect(currentRoute);
-});
-
-// POST request made from shortage list (removing sth from the shortage lst)
-app.post("/shortage/:name", async (req, res)=>{
-    const name = req.params.name;
-    const prep_side = prep_side_dict[name]; // locate the genre so that we know to which kitchen we are sending
-    // remove the ingredient from shortage_lst
-    if (name !== "米饭 Reis"){ // if it is not rice, remove it from shortage_lst
-        delete shortage_dict[name];
-        remain_lst = [...remain_lst, name]; // add the ingredient back to the remain_lst
-    }else if (shortage_dict[name] > 1){
-        shortage_dict[name] -= 1;
-    }else{
-        delete shortage_dict[name];
-    }
-    // update the meat end if it is a meat; otherwise update the veg end
-    if (prep_side === "meat"){
-        try {
-            const response = await axios.post(`http://localhost:${port}/removeMeat`, {name: name});
-        }catch (error){
-            console.log(error);
-        }
-        
-    }else{
-        try{
-            const response = await axios.post(`http://localhost:${port}/removeVeg`, {name: name});
-        }catch (error){
-            console.log(error);
-        }
-    }
-    res.redirect("/"); // re-renders the front side page
-    
-})
 
 server.listen(port, () => {
     console.log(`app listening on ${port}`);
