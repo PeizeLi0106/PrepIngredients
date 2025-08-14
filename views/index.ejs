@@ -13,8 +13,13 @@
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_mandarin %></h6>
                                     <h6 class="card-title" style="font-style: italic;"><%= item_in_german %></h6>
                                     <form action="/remain/<%= remain_ingre %>?currentRoute=<%= encodeURIComponent(req.originalUrl) %>" method="post" style="display: inline;">
-                                        <input type="submit" class="btn btn-primary" name="regular" value="&#43;" />
-                                        <% if (item_in_mandarin !== "米饭") { %>
+                                        <% if (item_in_mandarin === "毛豆" || item_in_mandarin === "花生" || item_in_mandarin === "冰粉" || item_in_mandarin === "仙草") { %>
+                                            <input type="submit" class="btn btn-primary" name="regular" value="in" />
+                                            <input type="submit" class="btn btn-warning" name="urgent" value="out" />
+                                        <% } else if (item_in_mandarin === "米饭") { %>
+                                            <input type="submit" class="btn btn-primary" name="regular" value="&#43;" />
+                                        <% } else { %>
+                                            <input type="submit" class="btn btn-primary" name="regular" value="&#43;" />
                                             <input type="submit" class="btn btn-warning" name="urgent" value="&#43;" />
                                         <% } %>
                                     </form>
