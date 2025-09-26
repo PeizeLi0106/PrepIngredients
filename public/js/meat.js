@@ -29,11 +29,6 @@ socket.on("updates shortage", (data) => {
         const [mandarin, german] = name.split(" ");
         const isRice = mandarin === "米饭";
         const quantity = isRice ? urgent : 1;
-        let extraH6 = "";
-        if (["毛豆", "花生", "冰粉", "仙草"].includes(mandarin)) {
-            extraH6 = `<h6 class="card-title" style="font-style: italic;font-size: 1.5rem; color: red;">${urgent ? "外卖" : "堂食"}</h6>`;
-        }
-    
         for (let i = 0; i < quantity; i++) {
             const card = document.createElement("div");
             card.className = "col";
@@ -45,7 +40,6 @@ socket.on("updates shortage", (data) => {
                     <div class="card-body">
                         <h6 class="card-title" style="font-style: italic;">${mandarin}</h6>
                         <h6 class="card-title" style="font-style: italic;">${german}</h6>
-                        ${extraH6}
                     </div>
                 </div>
             `;
