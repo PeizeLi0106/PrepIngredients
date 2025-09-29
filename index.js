@@ -62,8 +62,8 @@ const prep_side_dict = {}; // a dict {ingredient_name: prep_side (meat or veg)}
 const url_dict = {}; // {name: timestamp} stores timestamp solely for image files (name-timestamp.jpg)
 var remain_lst = []; // a list of ingredients that not in shortage (on the left side of the page)
 
-// the following dicts keep track of the urgency level of the shortage ingredients
-var shortage_dict = {}; // {name: urgency}
+// the following dicts keep track of the urgency level and portion size of the shortage ingredients
+var shortage_dict = {}; // {name: [urgency, portion]} urgency: true/false; portion: small/large
 // var meat_side_dict = {}; // {name: urgency}
 // var veg_side_dict = {}; // {name: urgency}
 
@@ -130,9 +130,10 @@ app.get("/veg", (req, res) => {
 
 // move a meat ingredient from remain to shortage and notify the meat chef in the kitchen to start prepping
 app.post("/addMeat", (req, res) => {
-    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+    const renderList = Object.entries(shortage_dict).map(([name, [urgent, portion]]) => ({
         name,
         urgent,
+        portion,
         timestamp: url_dict[name]
       })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
     io.emit("updates shortage", {renderList: renderList, message : "prepping a meat"}); // send the list of shortage ingredients to render
@@ -141,9 +142,10 @@ app.post("/addMeat", (req, res) => {
 
 // once the meat chef finishes preping and buffet staff confirms it, remove the ingredient from shortage and move it back to remain
 app.post("/removeMeat", (req, res) => {
-    const renderList = Object.entries(shortage_dict).map(([name, urgent]) => ({
+    const renderList = Object.entries(shortage_dict).map(([name, [urgent, portion]]) => ({
         name,
         urgent,
+        portion,
         timestamp: url_dict[name]
       })); // a list of objects {name: name, urgent: urgent, timestamp: ts}
     io.emit("updates shortage", {renderList: renderList, message : "received the ingredient"}); // the message now should be "received the ingredient"
@@ -176,10 +178,12 @@ app.post("/removeVeg", (req, res) => {
 
 // add an ingredient to the shortage list (removing it from remain_lst) and notify the chef in the kitchen
 app.post("/remain/:name", async (req, res) => {
-    var urgent = false;
-    if (Object.keys(req.body)[0] === "urgent"){
-        urgent = true;
-    }
+    const urgency = req.body.urgency;       // "regular" or "urgent"
+    const portion_size = req.body.portion;  // "small" or "large"
+
+    const urgent = urgency === "urgent" ? true : false;
+    const portion = portion_size === "large" ? "大份 große Portion" : "小份 kleine Portion";
+
     const name = req.params.name;
     const prep_side = prep_side_dict[name]; // locate the genre so that we know to which kitchen we are sending
     // remove the ingredient from remain_lst
@@ -187,7 +191,7 @@ app.post("/remain/:name", async (req, res) => {
         remain_lst = remain_lst.filter((remain) => {
             return remain !== name;
         });
-        shortage_dict[name] = urgent;
+        shortage_dict[name] = [urgent, portion]; // [true/false, small/large]
     }else if (name in shortage_dict){ // if it is rice, remain it in remain_lst and shortage_dict["rice"] = # of rices needed
         shortage_dict[name] += 1;
     }else{

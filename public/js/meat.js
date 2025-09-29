@@ -25,7 +25,7 @@ socket.on("updates shortage", (data) => {
     const container = document.querySelector(".row");
     container.innerHTML = ""; // Clear existing cards
 
-    renderList.forEach(({ name, urgent, timestamp }) => {
+    renderList.forEach(({ name, urgent, portion, timestamp }) => {
         const [mandarin, german] = name.split(" ");
         const isRice = mandarin === "米饭";
         const quantity = isRice ? urgent : 1;
@@ -40,6 +40,7 @@ socket.on("updates shortage", (data) => {
                     <div class="card-body">
                         <h6 class="card-title" style="font-style: italic;">${mandarin}</h6>
                         <h6 class="card-title" style="font-style: italic;">${german}</h6>
+                        <h6 class="card-title" style="font-style: italic;">${portion}</h6>
                     </div>
                 </div>
             `;

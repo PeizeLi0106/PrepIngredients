@@ -1,3 +1,41 @@
+function setupPortionModal() {
+  // Remember what was clicked
+  let clicked = { kind: null, action: null };
+
+  // 1) When a + button is clicked -> open modal and remember its URL + kind
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.portion-trigger');
+    if (!trigger) return;
+
+    clicked.kind = trigger.dataset.kind;        // "regular" | "urgent"
+    clicked.action = trigger.dataset.action;    // item-specific /remain/... URL
+
+    const modal = new bootstrap.Modal(document.getElementById('portionModal'));
+    modal.show();
+  });
+
+  // 2) When a portion size is chosen -> set form.action dynamically and submit
+  document.addEventListener('click', (e) => {
+    const option = e.target.closest('.portion-option');
+    if (!option || !clicked.kind || !clicked.action) return;
+
+    const form = document.getElementById('portionForm');
+    form.action = clicked.action;  // this ties the request to the item you clicked
+
+    form.innerHTML = `
+      <input type="hidden" name="urgency" value="${clicked.kind}">
+      <input type="hidden" name="portion" value="${option.dataset.portion}">
+    `;
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('portionModal'));
+    if (modal) modal.hide();
+
+    form.submit();
+  });
+}
+
+setupPortionModal();
+
 // Function to open the dialog
 function openDialog() {
     const dialog = document.getElementById('dialog-box');
